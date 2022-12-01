@@ -108,7 +108,7 @@ function renderCartListHtml(data) {
         <td>
             <p>總金額</p>
         </td>
-        <td>NT$${(data.total).toLocaleString()}</td>
+        <td>NT$${(data.finalTotal).toLocaleString()}</td>
         </tr>`
 
         shoppingCartTable.innerHTML=str;
@@ -223,10 +223,27 @@ orderInfoForm.addEventListener('submit',(e)=>{
         }
     }
     const error = validate(orderInfoForm,constraints)
-    console.log(error);
-    console.log(inputAll);
+    
+    //清空錯誤訊息
+    inputAll.forEach(item=>{
+        if(item.tagName=='INPUT'){
+            item.nextElementSibling.textContent = '';
+        }
+    })
+    //如果沒有錯誤訊息就跑購物車檢查
     if(!error){
-        sendOrder(OderData);
+        //先檢查購物車有沒有商品再送出頂單
+        const apiName = "carts";
+        axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`)
+        .then(res=>{
+            if((res.data.carts).length===0){
+                alert('購物車內無商品喔!')
+            }else{
+                sendOrder(OderData);
+            }
+        }).catch(error=>{
+            console.log(error);
+        })
     }else{
         inputAll.forEach(item=>{
             if(error[item.name]){
@@ -243,9 +260,10 @@ function sendOrder(obj){
     axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`,obj)
     .then(res=>{
         renderCartList();
-        orderInfoForm.reset();
         alert('預購成功!');
-    }).catch(error=>console.log(error));
+        orderInfoForm.reset();
+    })
+    .catch(error=>console.log(error));
 }
 
 
