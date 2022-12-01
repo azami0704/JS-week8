@@ -1,4 +1,4 @@
-const apiPath = "azami";
+
 getProducts();
 renderCartList();
 
@@ -82,7 +82,7 @@ function renderCartListHtml(data) {
         shoppingCartTable.innerHTML='購物車是空的喔!';
     }else{
         cartList.forEach(item=>{
-            str+=`<tr>
+            str+=`<tr data-id=${item.id}>
             <td>
                 <div class="cardItem-title">
                     <img src=${item.product.images} alt="${item.product.title}">
@@ -90,7 +90,7 @@ function renderCartListHtml(data) {
                 </div>
             </td>
             <td>NT$${(item.product.price).toLocaleString()}</td>
-            <td>${item.quantity}</td>
+            <td><a href="#" data-minus>-</a>${item.quantity}<a href="#" data-plus>+</a></td>
             <td>NT$${((item.quantity)*(item.product.price)).toLocaleString()}</td>
             <td class="discardBtn">
                 <a href="#" class="material-icons" data-id=${item.id}>
@@ -110,28 +110,65 @@ function renderCartListHtml(data) {
         </td>
         <td>NT$${(data.finalTotal).toLocaleString()}</td>
         </tr>`
-
         shoppingCartTable.innerHTML=str;
     
         const discardBtn = document.querySelectorAll('.discardBtn');
         const discardAllBtn = document.querySelectorAll('.discardAllBtn');
+        const minusBtn = document.querySelectorAll('[data-minus]');
+        const plusBtn = document.querySelectorAll('[data-plus]');
         discardBtn.forEach(item=>{
             item.addEventListener('click',function(e){
                 e.preventDefault();
-                deleteCart(e.target.dataset.id)
+                let id = item.closest('tr').dataset.id
+                deleteCart(id)
             })
         });
         discardAllBtn.forEach(item=>{
             item.addEventListener('click',function(e){
                 e.preventDefault();
                 deleteCartAll();
-                
+            })
+        })
+        minusBtn.forEach(item=>{
+            item.addEventListener('click',e=>{
+                e.preventDefault();
+                let id = item.closest('tr').dataset.id
+                if(e.target.nextSibling.textContent==1){
+                    deleteCart(id)
+                }else{
+                    let value = e.target.nextSibling.textContent*1 - 1
+                    editCart(id,value)
+                }
+            })
+        })
+        plusBtn.forEach(item=>{
+            item.addEventListener('click',e=>{
+                e.preventDefault();
+                let id = item.closest('tr').dataset.id
+                let value = e.target.previousSibling.textContent*1 + 1
+                editCart(id,value)
             })
         })
     }
     
 }
 
+
+//編輯購物車產品數量
+function editCart(id,value) {
+    const apiName = "carts";
+    let data = {
+        "data": {
+            "id": id,
+            "quantity": value
+        }
+    }
+    axios.patch(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`,data)
+    .then(res=>{
+        renderCartListHtml(res.data);
+    })
+    .catch(res=>console.log(res));
+}
 //刪除購物車內單筆項目
 function deleteCart(id) {
     const apiName = "carts";

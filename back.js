@@ -1,43 +1,45 @@
 let orderData;
 getOrderList();
+
+//抓取訂單資料
 function getOrderList() {
-    const apiPath = 'azami';
     const apiName = 'orders';
-    const token = {
-        "headers": {
-            "Authorization": '11T9j0DLoINfVlLsiZj1QN6q9Og1'
-        }
-    }
     axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${apiPath}/${apiName}`, token)
         .then(res => {
             renderOrderList(res.data.orders);
             if(res.data.orders.length){
+                //如果沒訂單資料就不跑C3圓餅圖
                 dataForC3(res.data.orders);
             }
         })
         .catch(res => console.log(res));
 }
 
+//整理銷售數據&渲染圓餅圖
 function dataForC3(data) {
     let allOrders = [];
+    //將所有訂單內品項撈出
     data.forEach(item=>{
         item.products.forEach(item=>{
-            allOrders.push(item.title);
+            allOrders.push([item.title,item.quantity]);
         })
     })
+    //統計各品項的銷售數量
     let soldSort = allOrders.reduce((a,b)=>{
-        a[b]?a[b]++:a[b]=1;
+        a[b[0]]?a[b[0]]+=(b[1])*1:a[b[0]]=([b[1]])*1;
         return a;
     },{})
+    //將物件轉陣列並依照銷售數量排序
     let soldSorted = Object.entries(soldSort).sort((a,b)=>{
         return b[1]-a[1];
     })
+    //統計第三名之後的品項數量
     let otherSum = 0;
     for (let i = 3; i < soldSorted.length; i++) {
         otherSum += soldSorted[i][1]  
     }
+    //刪除陣列內第三名之後的資料並插入"其他"選項跟加總個數
     soldSorted.splice(3,(soldSorted.length-3),['其他',otherSum]);
-    console.log(soldSorted);
     let soldSortedNo1 = soldSorted[0][0];
     let soldSortedNo2 = soldSorted[1][0];
     let soldSortedNo3 = soldSorted[2][0];
@@ -56,7 +58,7 @@ function dataForC3(data) {
     });
 }
 
-
+//渲染訂單清單
 function renderOrderList(data) {
     const orderPageTable = document.querySelector('.orderPage-table');
     let str = ` <thead>
@@ -84,7 +86,7 @@ function renderOrderList(data) {
             <td>${item.user.address}</td>
             <td>${item.user.email}</td>
             <td>
-            <p>${item.products[0].title}</p>
+            <p>${item.products[0].title}...(共${item.quantity}項)</p>
             </td>
             <td>${dateStr}</td>
             <td class="orderStatus">
@@ -111,40 +113,32 @@ function renderOrderList(data) {
         deleteAllOrders();
     })
     //訂單狀態按鈕綁監聽
-    const orderStatusBtn = document.querySelectorAll('.orderStatus')
+    const orderStatusBtn = document.querySelectorAll('.orderStatus > a')
     orderStatusBtn.forEach(item=>{
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const id = item.closest('tr').dataset.id;
-            editStatus(id);
+            let ChangeStatus = e.target.innerText=='未處理'?true:false;
+            editStatus(id,ChangeStatus);
         })
     })
 }
 
+//送出刪除單筆訂單
 function deleteOrder(id) {
-    const apiPath = 'azami';
     const apiName = 'orders';
     const orderId = id;
-    const token = {
-        "headers": {
-            "Authorization": '11T9j0DLoINfVlLsiZj1QN6q9Og1'
-        }
-    }
     axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${apiPath}/${apiName}/${orderId}`, token)
         .then(res => {
             renderOrderList(res.data.orders);
+            dataForC3(res.data.orders)
         })
         .catch(res => console.log(res));
 }
 
+//送出全部刪除訂單
 function deleteAllOrders() {
-    const apiPath = 'azami';
     const apiName = 'orders';
-    const token = {
-        "headers": {
-            "Authorization": '11T9j0DLoINfVlLsiZj1QN6q9Og1'
-        }
-    }
     axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${apiPath}/${apiName}`, token)
         .then(res => {
             getOrderList();
@@ -152,18 +146,12 @@ function deleteAllOrders() {
         .catch(res => console.log(res));
 }
 //修改訂單狀態
-function editStatus(id) {
-    const apiPath = 'azami';
+function editStatus(id,status) {
     const apiName = 'orders';
-    const token = {
-        "headers": {
-            "Authorization": '11T9j0DLoINfVlLsiZj1QN6q9Og1'
-        }
-    }
     const data = {
         "data": {
             "id": id,
-            "paid": true
+            "paid": status
         },
     }
     axios.put(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${apiPath}/${apiName}`,data, token)
@@ -174,27 +162,3 @@ function editStatus(id) {
         .catch(res => console.log(res));
 }
 
-// createdAt
-// :
-// 1669816752
-// id
-// :
-// "ONXsFrayesVmsxnPD1HZ"
-// paid
-// :
-// false
-// products
-// :
-// (2) [{…}, {…}]
-// quantity
-// :
-// 2
-// total
-// :
-// 1980
-// updatedAt
-// :
-// 1669816752
-// user
-// :
-// {tel: '0931394552', payment: 'ATM', email: 'doggy0704@gmail.com', name: '呂育綺', address: '民利街100巷3弄2號1樓'}

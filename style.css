@@ -834,3 +834,10 @@ body {
   display: none;
 }
 /*# sourceMappingURL=all.css.map */
+
+[data-minus],[data-plus]{
+  text-decoration: none;
+  color: #000000;
+  font-size: 1.2em;
+  padding-inline: 5px;
+}
