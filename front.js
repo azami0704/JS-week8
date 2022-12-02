@@ -1,18 +1,20 @@
 
-getProducts();
-renderCartList();
+import {getProducts,
+        renderCartListApi,
+        addCartApi,
+        editCartApi,
+        deleteCartApi,
+        deleteCartAllApi,
+        sendOrderApi
+} from "./config.js";
 
-//抓商品資料
-function getProducts(){
-    const apiName = "products";
-    axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`)
-    .then((res)=>{
-        renderProductsCard(res.data.products);
-        renderFilter(res.data.products);
-    }).catch((error)=>{
-        console.log(error);
-    });
-}
+getProducts().then((res)=>{
+            renderProductsCard(res.data.products);
+            renderFilter(res.data.products);
+        }).catch((error)=>{
+            console.log(error);
+        });
+renderCartList();
 
 //渲染商品列表
 function renderProductsCard(data) {
@@ -26,7 +28,7 @@ function renderProductsCard(data) {
         <h3>${item.title}</h3>
         <del class="originPrice">NT$${(item.origin_price).toLocaleString()}</del>
         <p class="nowPrice">NT$${(item.price).toLocaleString()}</p>
-    </li>`
+        </li>`
     });
     productWrap.innerHTML = str;
 
@@ -41,16 +43,14 @@ function renderProductsCard(data) {
 
 //加入購物車
 function addCart(id) {
-    const apiName = "carts";
     let data={
         "data":{
             "productId": id,
             "quantity": 1
         }
     }
-    axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`,data)
-    .then(res=>{
-        renderCartList();
+    addCartApi(data).then(res=>{
+        renderCartListHtml(res.data)
     }).catch(error=>{
         console.log(error);
     })
@@ -58,13 +58,12 @@ function addCart(id) {
 
 //讀取購物車
 function renderCartList() {
-    const apiName = "carts";
-    axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`)
+    renderCartListApi()
     .then(res=>{
         renderCartListHtml(res.data);
     }).catch(error=>{
         console.log(error);
-    })
+    });
 }
 
 //渲染購物車清單
@@ -76,7 +75,7 @@ function renderCartListHtml(data) {
     <th width="15%">數量</th>
     <th width="15%">金額</th>
     <th width="15%"></th>
-</tr>`;
+    </tr>`;
     let cartList = data.carts;
     if(cartList.length==0){
         shoppingCartTable.innerHTML='購物車是空的喔!';
@@ -90,7 +89,8 @@ function renderCartListHtml(data) {
                 </div>
             </td>
             <td>NT$${(item.product.price).toLocaleString()}</td>
-            <td><a href="#" data-minus>-</a>${item.quantity}<a href="#" data-plus>+</a></td>
+            <td>
+            <a href="#" data-minus>-</a>${item.quantity}<a href="#" data-plus>+</a></td>
             <td>NT$${((item.quantity)*(item.product.price)).toLocaleString()}</td>
             <td class="discardBtn">
                 <a href="#" class="material-icons" data-id=${item.id}>
@@ -100,16 +100,16 @@ function renderCartListHtml(data) {
         </tr>`
         })
         str+=` <tr>
-        <td>
-            <a href="#" class="discardAllBtn">刪除所有品項</a>
-        </td>
-        <td></td>
-        <td></td>
-        <td>
-            <p>總金額</p>
-        </td>
-        <td>NT$${(data.finalTotal).toLocaleString()}</td>
-        </tr>`
+                <td>
+                    <a href="#" class="discardAllBtn">刪除所有品項</a>
+                </td>
+                <td></td>
+                <td></td>
+                <td>
+                    <p>總金額</p>
+                </td>
+                <td>NT$${(data.finalTotal).toLocaleString()}</td>
+                </tr>`
         shoppingCartTable.innerHTML=str;
     
         const discardBtn = document.querySelectorAll('.discardBtn');
@@ -153,38 +153,35 @@ function renderCartListHtml(data) {
     
 }
 
-
 //編輯購物車產品數量
 function editCart(id,value) {
-    const apiName = "carts";
     let data = {
         "data": {
             "id": id,
             "quantity": value
         }
     }
-    axios.patch(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`,data)
+    editCartApi(data)
     .then(res=>{
         renderCartListHtml(res.data);
     })
     .catch(res=>console.log(res));
+
 }
 //刪除購物車內單筆項目
 function deleteCart(id) {
-    const apiName = "carts";
-    axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}/${id}`)
+    deleteCartApi(id)
     .then(res=>{
         renderCartList();
-    })
-    .catch(res=>console.log(res));
+    }).catch(res=>console.log(res));
+
 }
 
 //清空購物車
 function deleteCartAll(){
-    const apiName = "carts";
-    axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`)
+    deleteCartAllApi()
     .then(res=>{
-        renderCartList();
+        renderCartListHtml(res.data);
     })
     .catch(res=>console.log(res));
 }
@@ -209,7 +206,7 @@ function renderFilter(data) {
     })
 }
 
-//預訂資料表單綁監聽抓資料&驗證
+//客戶資料表單綁監聽抓資料&驗證
 const orderInfoForm = document.querySelector('.orderInfo-form');
 orderInfoForm.addEventListener('submit',(e)=>{
     e.preventDefault();
@@ -269,9 +266,8 @@ orderInfoForm.addEventListener('submit',(e)=>{
     })
     //如果沒有錯誤訊息就跑購物車檢查
     if(!error){
-        //先檢查購物車有沒有商品再送出頂單
-        const apiName = "carts";
-        axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`)
+        //先檢查購物車有沒有商品再送出訂單
+        renderCartListApi()
         .then(res=>{
             if((res.data.carts).length===0){
                 alert('購物車內無商品喔!')
@@ -290,11 +286,9 @@ orderInfoForm.addEventListener('submit',(e)=>{
     }
 })
 
-
 //送出訂單
 function sendOrder(obj){
-    const apiName = "orders";
-    axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${apiPath}/${apiName}`,obj)
+    sendOrderApi(obj)
     .then(res=>{
         renderCartList();
         alert('預購成功!');
