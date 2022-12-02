@@ -1,5 +1,4 @@
-import {
-    getOrderListApi,
+import {getOrderListApi,
     deleteAllOrdersApi,
     deleteOrderApi,
     editStatusApi
