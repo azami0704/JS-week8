@@ -113,13 +113,17 @@ function renderOrderList(data) {
         deleteAllOrders();
     })
     //訂單狀態按鈕綁監聽
-    const orderStatusBtn = document.querySelectorAll('.orderStatus > a')
+    const orderStatusBtn = document.querySelectorAll('.orderStatus')
     orderStatusBtn.forEach(item=>{
         item.addEventListener('click', (e) => {
-            e.preventDefault();
-            const id = item.closest('tr').dataset.id;
-            let ChangeStatus = e.target.innerText=='未處理'?true:false;
-            editStatus(id,ChangeStatus);
+            if(e.target.nodeName=='TD'){
+                return;
+            }else{
+                e.preventDefault();
+                const id = item.closest('tr').dataset.id;
+                let ChangeStatus = e.target.innerText=='未處理'?true:false;
+                editStatus(id,ChangeStatus);
+            }
         })
     })
 }
